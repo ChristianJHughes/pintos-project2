@@ -90,7 +90,7 @@ process_wait (tid_t child_tid UNUSED)
 {
   while(true)
   {
-    
+
   }
   return -1;
 }
@@ -105,6 +105,7 @@ process_exit (void)
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
+  
   if (pd != NULL) 
     {
       /* Correct ordering here is crucial.  We must set

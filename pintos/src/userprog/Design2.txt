@@ -8,9 +8,9 @@
 
 >> Fill in the names of your group members.
 
-FirstName LastName
-FirstName LastName
-FirstName LastName
+Matt Hixon
+Christian Hughes
+Katie Kristiansen
 
 ---- PRELIMINARIES ----
 

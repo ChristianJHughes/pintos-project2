@@ -150,7 +150,7 @@ void check_valid_addr (const void *ptr_to_check)
 {
   if(is_kernel_vaddr(ptr_to_check) || ptr_to_check == NULL || !pagedir_get_page(thread_current()->pagedir, ptr_to_check))
 	{
-    // Terminate the program and free its resources
+    /* Terminate the program and free its resources */
     exit(-1);
 	}
 }

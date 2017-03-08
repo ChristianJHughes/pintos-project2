@@ -31,6 +31,16 @@ process_execute (const char *file_name)
   char *fn_copy;
   tid_t tid;
 
+  /* Initializes variables necessary to use the strok_r library function. */
+  char *token, *save_ptr;
+  /* Break up command line arguments using ' ' (space) as a delimeter. */
+  for (token = strtok_r (file_name, " ", &save_ptr); token != NULL;
+       token = strtok_r (NULL, " ", &save_ptr))
+ {
+   printf ("'%s'\n", token);
+ }
+
+
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (0);

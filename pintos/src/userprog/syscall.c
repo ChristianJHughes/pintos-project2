@@ -69,8 +69,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 				break;
 
 			case SYS_WRITE:
-				puts("WRITE");
-
         /* Get three arguments off of the stack. The first represents the fd, the second
            represents the buffer, and the third represents the buffer length. */
         get_stack_arguments(f, &args[0], 3);

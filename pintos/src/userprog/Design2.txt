@@ -21,6 +21,8 @@ Katie Kristiansen
 >> preparing your submission, other than the Pintos documentation, course
 >> text, lecture notes, and course staff.
 
+https://github.com/ryantimwilson/Pintos-Project-2/blob/master/src/userprog/syscall.c - (for getting stack args).
+
 			   ARGUMENT PASSING
 			   ================
 

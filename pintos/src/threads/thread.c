@@ -469,6 +469,10 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+  
+  /* Init the threads list of processes it creates. */
+  // list_init(&t->child_process_list);
+
   list_push_back (&all_list, &t->allelem);
 }
 

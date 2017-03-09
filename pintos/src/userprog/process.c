@@ -21,6 +21,9 @@
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
+// static struct thread matching_thread = NULL;
+// static tid_t current_tid = NULL;
+
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -44,6 +47,7 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy);
+  // list_push_front(&thread_current()->child_process_list, thread_current()->elem);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
   return tid;
@@ -92,10 +96,24 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED)
 {
+//   /* We set the current_tid to the thread id we want to find. */
+  // current_tid = child_tid;
+
+//    Loop through all the threads looking for a specific tid. If we find a mathching thread,
+//      we set the matching_thread to be the corresponding thread. 
   while(true)
   {
-
+    // matching_thread = NULL;
+    // thread_foreach(*find_tid, NULL);
+    // if(matching_thread == NULL)
+    // {
+    //     return -1;
+    // }
   }
+
+
+  /* We didn't find a thread that matched the tid_t */
+
   return -1;
 }
 
@@ -537,3 +555,14 @@ install_page (void *upage, void *kpage, bool writable)
   return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 }
+
+
+
+/* Our own functions. */
+
+// static void find_tid (struct thread t, void * aux)
+// {
+//   if(current_tid == t->tid) {
+//     matching_thread = t;
+//   }
+// }

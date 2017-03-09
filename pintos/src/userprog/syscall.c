@@ -34,8 +34,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 				break;
 
 			case SYS_EXIT:
-        /* Exit has exactly one stack argument, representing the exit status. */
-        get_stack_arguments(f, &args[0], 1);
+		        /* Exit has exactly one stack argument, representing the exit status. */
+		        get_stack_arguments(f, &args[0], 1);
 				/* We pass exit the status code of the process. */
 				exit(args[0]);
 				break;

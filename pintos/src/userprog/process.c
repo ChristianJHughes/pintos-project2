@@ -116,18 +116,11 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED)
 {
-  // puts("CALLLLLEEED");
   /* The child thread that we're waiting on to return. */
   struct thread *child_thread = NULL;
 
   /* list element to iterate the list of child threads. */
   struct list_elem *temp;
-
-  /* If this thread has no children, we don't need to wait. */
-  // if(list_empty(&thread_current()->child_process_list))
-  // {
-  //   return -1;
-  // }
 
   /* Look to see if the child thread in question is our child. */
   for (temp = list_front(&thread_current()->child_process_list); temp != NULL; temp = temp->next)
@@ -139,9 +132,6 @@ process_wait (tid_t child_tid UNUSED)
         break;
       }
   }
-
-  // printf("CHILD TID: %d\n", child_tid);
-
 
   /* If not our child, we musn't wait. */
   if(child_thread == NULL)
@@ -159,32 +149,12 @@ process_wait (tid_t child_tid UNUSED)
     child_thread->is_waited_for = true;
   }
 
-  // printf("CUR THREAD: %s\n", thread_current()->name);
-  // printf("CHILD THREAD: %s\n", child_thread->name);
-  // printf("CHILD THREAD: %s\n", child_thread->name);
-
-
-  /* Wait for the child to die (so sad, poor kid). */
-  // while(child_thread->status != 3)
-  // {
-  //   // printf("%d\n", child_thread->status);
-  // }
-
-
-
-  // printf("%s", thread_current()->name);
-
-  // LOL
+  /* Put the current thread to sleep by waiting on the child thread whose
+     PID was passed in. */
   sema_down(&child_thread->being_waited_on);
 
   /* After our kiddo is dead, we return its exit status. */
   return child_thread->exit_status;
-
-  // while (true)
-  // {
-
-  // }
-  // return -1;
 }
 
 /* Free the current process's resources. */

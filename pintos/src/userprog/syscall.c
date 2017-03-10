@@ -38,8 +38,8 @@ syscall_handler (struct intr_frame *f UNUSED)
 				break;
 
 			case SYS_EXIT:
-		        /* Exit has exactly one stack argument, representing the exit status. */
-		        get_stack_arguments(f, &args[0], 1);
+        /* Exit has exactly one stack argument, representing the exit status. */
+        get_stack_arguments(f, &args[0], 1);
 				/* We pass exit the status code of the process. */
 				exit(args[0]);
 				break;
@@ -47,14 +47,15 @@ syscall_handler (struct intr_frame *f UNUSED)
 			case SYS_EXEC:
 				/* The first argument of exec is the entire command line text for executing the program */
 				get_stack_arguments(f, &args[0], 1);
-
 				/* Return the result of the exec() function in the eax register. */
 				f->eax = exec((const char *) args[0]);
 				break;
 
 			case SYS_WAIT:
-				// puts("halt");
+        /* The first argument is the PID of the child process
+           that the current process must wait on. */
 				get_stack_arguments(f, &args[0], 1);
+        /* Return the result of the wait() function in the eax register. */
 				f->eax = wait((pid_t) args[0]);
 				break;
 
@@ -79,15 +80,15 @@ syscall_handler (struct intr_frame *f UNUSED)
 				break;
 
 			case SYS_WRITE:
-		        /* Get three arguments off of the stack. The first represents the fd, the second
-		           represents the buffer, and the third represents the buffer length. */
-		        get_stack_arguments(f, &args[0], 3);
+        /* Get three arguments off of the stack. The first represents the fd, the second
+           represents the buffer, and the third represents the buffer length. */
+        get_stack_arguments(f, &args[0], 3);
 
-		        /* Transform the virtual address for the buffer into a physical address. */
-		        args[1] = (int) pagedir_get_page(thread_current()->pagedir, (const void *) args[1]);
+        /* Transform the virtual address for the buffer into a physical address. */
+        args[1] = (int) pagedir_get_page(thread_current()->pagedir, (const void *) args[1]);
 
-		        /* Return the result of the write() function in the eax register. */
-		        f->eax = write(args[0], (const void *) args[1], (unsigned) args[2]);
+        /* Return the result of the write() function in the eax register. */
+        f->eax = write(args[0], (const void *) args[1], (unsigned) args[2]);
         break;
 
 			case SYS_SEEK:
@@ -103,7 +104,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 				break;
 
 			default:
-        // If an invalid system call was sent, terminate the program.
+        /* If an invalid system call was sent, terminate the program. */
 				exit(-1);
 				break;
 		}
@@ -121,7 +122,8 @@ void exit (int status)
 {
 	thread_current()->exit_status = status;
 	printf("%s: exit(%d)\n", thread_current()->name, status);
-  	thread_exit ();
+  // sema_up(&thread_current()->being_waited_on);
+  thread_exit ();
 }
 
 /* Writes LENGTH bytes from BUFFER to the open file FD. Returns the number of bytes actually written,
@@ -139,43 +141,25 @@ int write (int fd, const void *buffer, unsigned length)
 		/* do something else with other fd */
 	}
 }
-
-pid_t exec (const char *file) 
+/* Executes the program with the given file name. */
+pid_t exec (const char *file)
 {
+  /* If a null file is passed in, return a -1. */
 	if(*file == NULL)
 	{
 		return -1;
 	}
 
+  /* Get and return the PID of the process that is created. */
 	pid_t child_tid = process_execute(file);
-
-
 	return child_tid;
-	// if(child_tid != -1)
-	// {
-	// 	current_tid = child_tid;
-	// 	thread_foreach(*find_tid, NULL);
-	// 	list_insert(&thread_current()->child_process_list, &matching_thread->elem);
-	// 	return child_tid;
-	// }
-	// else
-	// {
-	// 	return -1;
-	// }
 }
 
-int wait (pid_t pid) 
+/* If the PID passed in is our child, then we wait on it to terminate before proceeding */
+int wait (pid_t pid)
 {
-	// old_level = intr_disable ();
-	// current_tid = pid;
-	// thread_foreach(*find_tid, NULL);
-	// matching_thread->success_status = process_wait(pid);
-	// intr_set_level (old_level);
-	// return matching_thread->success_status;
-
-	/* If the thread created is a valid thread, then we must disable interupts, and add it to this threads list of child threads. */ 
-    return process_wait(pid);
-
+	/* If the thread created is a valid thread, then we must disable interupts, and add it to this threads list of child threads. */
+  return process_wait(pid);
 }
 
 bool create (const char *file, unsigned initial_size) {return true;}
@@ -218,7 +202,7 @@ void get_stack_arguments (struct intr_frame *f, int *args, int num_of_args)
    that matches a specific tid. */
 static void find_tid (struct thread *t, void * aux)
 {
-  if(current_tid == t->tid) 
+  if(current_tid == t->tid)
   {
     matching_thread = t;
   }

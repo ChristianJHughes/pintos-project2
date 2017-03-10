@@ -471,7 +471,10 @@ init_thread (struct thread *t, const char *name, int priority)
   t->magic = THREAD_MAGIC;
   
   /* Init the threads list of processes it creates. */
-  // list_init(&t->child_process_list);
+  list_init(&t->child_process_list);
+
+  /* Init the thread to show it has not been waited on. */
+  t->is_waited_for = false;
 
   list_push_back (&all_list, &t->allelem);
 }

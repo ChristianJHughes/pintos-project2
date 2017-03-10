@@ -21,8 +21,12 @@
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
-// static struct thread matching_thread = NULL;
-// static tid_t current_tid = NULL;
+static void find_tid (struct thread *t, void * aux);
+
+/* A global variable - the thread that we are looking for in the thread list (NULL if not found). */
+static struct thread * matching_thread;
+/* A global variable - the tid of the thread that we are looking for in the thread list (-1 if not found (set in functions)). */
+static tid_t current_tid;
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -45,11 +49,28 @@ process_execute (const char *file_name)
   char * save_ptr;
   char * name = strtok_r((char *)file_name, " ", &save_ptr);
 
+  /* Ensure that we weren't passed a NULL command line string (all spaces, for examples). */
+  if (name == NULL)
+  {
+    return -1;
+  }
+
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy);
-  // list_push_front(&thread_current()->child_process_list, thread_current()->elem);
+
   if (tid == TID_ERROR)
+  {
     palloc_free_page (fn_copy);
+  }
+  else
+  {
+    /* If the thread created is a valid thread, then we must disable interupts, and add it to this threads list of child threads. */ 
+    current_tid = tid;
+    enum intr_level old_level = intr_disable ();
+    thread_foreach(*find_tid, NULL);
+    list_push_front(&thread_current()->child_process_list, &matching_thread->child_elem);
+    intr_set_level (old_level);
+  }
   return tid;
 }
 
@@ -61,7 +82,6 @@ start_process (void *file_name_)
   char *file_name = file_name_;
   struct intr_frame if_;
   bool success;
-
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
@@ -96,25 +116,68 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED)
 {
-//   /* We set the current_tid to the thread id we want to find. */
-  // current_tid = child_tid;
+  puts("CALLLLLEEED");
+  /* The child thread that we're waiting on to return. */
+  struct thread *child_thread = NULL; 
 
-//    Loop through all the threads looking for a specific tid. If we find a mathching thread,
-//      we set the matching_thread to be the corresponding thread. 
-  while(true)
+  /* list element to iterate the list of child threads. */
+  struct list_elem *temp;
+
+  /* If this thread has no children, we don't need to wait. */
+  // if(list_empty(&thread_current()->child_process_list))
+  // {
+  //   return -1;
+  // }
+
+  /* Look to see if the child thread in question is our child. */
+  for (temp = list_front(&thread_current()->child_process_list); temp != NULL; temp = temp->next)
   {
-    // matching_thread = NULL;
-    // thread_foreach(*find_tid, NULL);
-    // if(matching_thread == NULL)
-    // {
-    //     return -1;
-    // }
+      struct thread *t = list_entry (temp, struct thread, child_elem);
+      if (t->tid == child_tid) 
+      {
+        child_thread = t; 
+        break;
+      }
   }
 
+  printf("CHILD TID: %d\n", child_tid);
 
-  /* We didn't find a thread that matched the tid_t */
 
-  return -1;
+  /* If not our child, we musn't wait. */
+  if(child_thread == NULL)
+  {
+    return -1;
+  }
+
+  /* If we've already waited on this child, then we shall not wait again. */
+  if(child_thread->is_waited_for)
+  {
+    return -1;
+  } 
+  else
+  {
+    child_thread->is_waited_for = true;
+  }
+
+  printf("CUR THREAD: %s\n", thread_current()->name);
+  printf("CHILD THREAD: %s\n", child_thread->name);
+  // printf("CHILD THREAD: %s\n", child_thread->name);
+
+
+  /* Wait for the child to die (so sad, poor kid). */
+  while(child_thread->status != 3)
+  {
+    // printf("%d\n", child_thread->status);
+  }
+  printf("%s", thread_current()->name);
+  /* After our kiddo is dead, we return its exit status. */ 
+  return child_thread->exit_status;
+
+  // while (true)
+  // {
+
+  // }
+  // return -1;
 }
 
 /* Free the current process's resources. */
@@ -558,11 +621,12 @@ install_page (void *upage, void *kpage, bool writable)
 
 
 
-/* Our own functions. */
-
-// static void find_tid (struct thread t, void * aux)
-// {
-//   if(current_tid == t->tid) {
-//     matching_thread = t;
-//   }
-// }
+/* This function is passed to thread_foreach in order to find the thread
+   that matches a specific tid. */
+static void find_tid (struct thread *t, void * aux UNUSED)
+{
+  if(current_tid == t->tid) 
+  {
+    matching_thread = t;
+  }
+}

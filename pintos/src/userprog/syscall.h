@@ -8,6 +8,7 @@ typedef int pid_t;
 
 void syscall_init (void);
 
+// void find_tid (struct thread *t, void * aux);
 /* Projects 2 and later. */
 void halt (void) NO_RETURN;
 void exit (int status) NO_RETURN;
@@ -22,5 +23,6 @@ int write (int fd, const void *buffer, unsigned length);
 void seek (int fd, unsigned position);
 unsigned tell (int fd);
 void close (int fd);
+
 
 #endif /* userprog/syscall.h */

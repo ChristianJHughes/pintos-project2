@@ -96,7 +96,10 @@ struct thread
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
-    struct list child_proccess_list;    /* List containing each child process. */
+    struct list child_process_list;    /* List containing each child process. */
+    int exit_status;                 /* Stores the status upon exit */
+    bool is_waited_for;                 /* Used to keep track if the processes parent is waiting. */
+    struct list_elem child_elem;        /* Used to keep track of the element in the child list. */
 #endif
 
     /* Owned by thread.c. */

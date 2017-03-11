@@ -10,5 +10,7 @@ main (int argc, char **argv)
     printf ("%s ", argv[i]);
   printf ("\n");
   exec("insult");
+  // remove("insult");
+  // wait(exec("insult"));
   return EXIT_SUCCESS;
 }

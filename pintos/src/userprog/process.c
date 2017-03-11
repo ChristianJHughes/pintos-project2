@@ -153,6 +153,7 @@ process_wait (tid_t child_tid UNUSED)
      PID was passed in. */
   sema_down(&child_thread->being_waited_on);
 
+
   /* After our kiddo is dead, we return its exit status. */
   return child_thread->exit_status;
 }
@@ -607,4 +608,3 @@ static void find_tid (struct thread *t, void * aux UNUSED)
     matching_thread = t;
   }
 }
-       

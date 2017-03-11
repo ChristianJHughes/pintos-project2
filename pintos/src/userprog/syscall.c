@@ -142,11 +142,29 @@ syscall_handler (struct intr_frame *f UNUSED)
 				break;
 
 			case SYS_FILESIZE:
-				// puts("halt");
+        /* filesize has exactly one stack argument, representing the fd of the file. */
+        get_stack_arguments(f, &args[0], 1);
+
+        /* We return file size of the fd to the process. */
+        f->eax = filesize(args[0]);
 				break;
 
 			case SYS_READ:
-				// puts("halt");
+        /* Get three arguments off of the stack. The first represents the fd, the second
+           represents the buffer, and the third represents the buffer length. */
+        get_stack_arguments(f, &args[0], 3);
+
+        // if (!is_user_vaddr(args[1])) exit(-1);
+        /* Ensures that converted address is valid. */
+        phys_page_ptr = pagedir_get_page(thread_current()->pagedir, (const void *) args[1]);
+        if (phys_page_ptr == NULL)
+        {
+          exit(-1);
+        }
+        args[1] = (int) phys_page_ptr;
+
+        /* Return the result of the read() function in the eax register. */
+        f->eax = read(args[0], (const void *) args[1], (unsigned) args[2]);
 				break;
 
 			case SYS_WRITE:
@@ -167,15 +185,28 @@ syscall_handler (struct intr_frame *f UNUSED)
         break;
 
 			case SYS_SEEK:
-				// puts("halt");
-				break;
+        /* Get two arguments off of the stack. The first represents the fd, the second
+           represents the position. */
+        get_stack_arguments(f, &args[0], 2);
+
+        /* Return the result of the seek() function in the eax register. */
+        seek(args[0], (unsigned) args[1]);
+        break;
 
 			case SYS_TELL:
-				// puts("halt");
-				break;
+        /* tell has exactly one stack argument, representing the fd of the file. */
+        get_stack_arguments(f, &args[0], 1);
+
+        /* We return the position of the next byte to read or write in the fd. */
+        f->eax = tell(args[0]);
+        break;
 
 			case SYS_CLOSE:
-				// puts("halt");
+        /* close has exactly one stack argument, representing the fd of the file. */
+        get_stack_arguments(f, &args[0], 1);
+
+        /* We close the file referenced by the fd. */
+        close(args[0]);
 				break;
 
 			default:
@@ -204,19 +235,42 @@ void exit (int status)
  which may be less than LENGTH if some bytes could not be written. */
 int write (int fd, const void *buffer, unsigned length)
 {
+  lock_acquire(&lock_filesys);
+  /* list element to iterate the list of child threads. */
+  struct list_elem *temp;
+
   /* If fd is equal to one, then we write to STDOUT (the console, usually). */
 	if(fd == 1)
 	{
 		putbuf(buffer, length);
+    lock_release(&lock_filesys);
     return length;
 	}
-	else
-	{
-		/* do something else with other fd */
-	}
+  /* If the user passes STDIN or no files are present, then return 0. */
+  if (fd == 0 || list_empty(&thread_current()->file_descriptors))
+  {
+    lock_release(&lock_filesys);
+    return 0;
+  }
+
+  /* Look to see if the child thread in question is our child. */
+  for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
+  {
+      struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
+      if (t->file_descriptor == fd)
+      {
+        lock_release(&lock_filesys);
+        return (int) file_write(t->file_addr, buffer, length);
+      }
+  }
+
+  lock_release(&lock_filesys);
+  /* If we can't write to the file, return 0. */
+  return 0;
 }
+
 /* Executes the program with the given file name. */
-pid_t exec (const char *file)
+pid_t exec (const char * file)
 {
   /* If a null file is passed in, return a -1. */
 	if(*file == NULL)
@@ -263,6 +317,7 @@ int open (const char *file)
   /* Make sure that only one process can get ahold of the file system at one time. */
   lock_acquire(&lock_filesys);
   struct file* f = filesys_open(file);
+
   /* If no file was created, then return -1. */
   if(f == NULL)
   {
@@ -282,12 +337,156 @@ int open (const char *file)
   return fd;
 }
 
+int filesize (int fd)
+{
+  /* list element to iterate the list of child threads. */
+  struct list_elem *temp;
+  lock_acquire(&lock_filesys);
+  /* If there are no files associated with this thread, return -1 */
+  if (list_empty(&thread_current()->file_descriptors))
+  {
+    lock_release(&lock_filesys);
+    return -1; // TODO Might need to return 0.
+  }
 
-int filesize (int fd) {return 0;}
-int read (int fd, void *buffer, unsigned length) {return 0;}
-void seek (int fd, unsigned position) {}
-unsigned tell (int fd) {return 0;}
-void close (int fd) {}
+  /* Look to see if the child thread in question is our child. */
+  for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
+  {
+      struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
+      if (t->file_descriptor == fd)
+      {
+        lock_release(&lock_filesys);
+        return (int) file_length(t->file_addr);
+      }
+  }
+
+  lock_release(&lock_filesys);
+  /* Return -1 if we can't find the file. */
+  return -1;
+}
+
+int read (int fd, void *buffer, unsigned length)
+{
+  /* list element to iterate the list of child threads. */
+  struct list_elem *temp;
+  lock_acquire(&lock_filesys);
+
+  if (fd == 0)
+  {
+    lock_release(&lock_filesys);
+    return (int) input_getc();
+  }
+
+  if (fd == 1 || list_empty(&thread_current()->file_descriptors))
+  {
+    lock_release(&lock_filesys);
+    return 0;
+  }
+
+  /* Look to see if the child thread in question is our child. */
+  for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
+  {
+      struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
+      if (t->file_descriptor == fd)
+      {
+        lock_release(&lock_filesys);
+        return (int) file_read(t->file_addr, buffer, length);
+      }
+  }
+
+  lock_release(&lock_filesys);
+  /* If we can't read from the file, return -1. */
+  return -1;
+}
+
+void seek (int fd, unsigned position)
+{
+  /* list element to iterate the list of child threads. */
+  struct list_elem *temp;
+
+  lock_acquire(&lock_filesys);
+
+  /* If the user passes STDIN, STDOUT or no files are present, then return 0. */
+  if (list_empty(&thread_current()->file_descriptors))
+  {
+    lock_release(&lock_filesys);
+    return;
+  }
+
+  /* Look to see if the child thread in question is our child. */
+  for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
+  {
+      struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
+      if (t->file_descriptor == fd)
+      {
+        file_seek(t->file_addr, position);
+        lock_release(&lock_filesys);
+        return;
+      }
+  }
+
+  lock_release(&lock_filesys);
+  /* If we can't seek, return. */
+  return;
+}
+
+unsigned tell (int fd)
+{
+  /* list element to iterate the list of child threads. */
+  struct list_elem *temp;
+
+  lock_acquire(&lock_filesys);
+
+  if (list_empty(&thread_current()->file_descriptors))
+  {
+    lock_release(&lock_filesys);
+    return -1;
+  }
+
+  /* Look to see if the child thread in question is our child. */
+  for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
+  {
+      struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
+      if (t->file_descriptor == fd)
+      {
+        unsigned position = (unsigned) file_tell(t->file_addr);
+        lock_release(&lock_filesys);
+        return position;
+      }
+  }
+  lock_release(&lock_filesys);
+  return -1;
+}
+
+void close (int fd)
+{
+  /* list element to iterate the list of child threads. */
+  struct list_elem *temp;
+
+  lock_acquire(&lock_filesys);
+
+  if (list_empty(&thread_current()->file_descriptors))
+  {
+    lock_release(&lock_filesys);
+    return;
+  }
+
+  /* Look to see if the child thread in question is our child. */
+  for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
+  {
+      struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
+      if (t->file_descriptor == fd)
+      {
+        file_close(t->file_addr);
+        list_remove(&t->file_elem);
+        lock_release(&lock_filesys);
+        return;
+      }
+  }
+
+  lock_release(&lock_filesys);
+  return;
+}
 
 /* Check to make sure that the given pointer is in user space,
    and is not null. We must exit the program and free its resources should
@@ -297,7 +496,8 @@ void check_valid_addr (const void *ptr_to_check)
   /* Terminate the program with an exit status of -1 if we are passed
      an argument that is not in the user address space or is null. Also make
      sure that pointer doesn't go beyond the bounds of virtual address space.  */
-  if(!is_user_vaddr(ptr_to_check) || ptr_to_check == NULL || ptr_to_check < 0x08084000) // TODO IDK
+     // TODO Might need this || ptr_to_check < 0x08084000
+  if(!is_user_vaddr(ptr_to_check) || ptr_to_check == NULL) // TODO IDK
 	{
     /* Terminate the program and free its resources */
     exit(-1);

@@ -204,6 +204,11 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
+  // if (!filesys_open(t->name))
+  // {
+  //   return -1;
+  // }
+
   intr_set_level (old_level);
 
   /* Add to run queue. */
@@ -289,6 +294,8 @@ void
 thread_exit (void)
 {
   ASSERT (!intr_context ());
+  /* Tell my parent thread to stop waiting. */
+  sema_up(&thread_current ()->being_waited_on);
 
 #ifdef USERPROG
   process_exit ();
@@ -298,7 +305,6 @@ thread_exit (void)
      and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */
   intr_disable ();
-  sema_up(&thread_current ()->being_waited_on); /* Tell my parent thread to stop waiting. */
   list_remove (&thread_current ()->allelem);
   thread_current ()->status = THREAD_DYING;
   schedule ();

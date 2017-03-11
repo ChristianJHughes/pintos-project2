@@ -122,6 +122,11 @@ process_wait (tid_t child_tid UNUSED)
   /* list element to iterate the list of child threads. */
   struct list_elem *temp;
 
+  if(list_empty(&thread_current()->child_process_list))
+  {
+    return -1;
+  }
+
   /* Look to see if the child thread in question is our child. */
   for (temp = list_front(&thread_current()->child_process_list); temp != NULL; temp = temp->next)
   {

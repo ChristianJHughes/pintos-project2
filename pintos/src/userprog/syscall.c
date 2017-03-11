@@ -5,9 +5,17 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "userprog/pagedir.h"
-#include "threads/init.h" // Imports shutdown_power_off() for use in halt()
+#include "threads/init.h"
+#include "devices/shutdown.h" // Imports shutdown_power_off() for use in halt()
+#include "filesys/file.h"
+#include "filesys/filesys.h"
+#include "userprog/process.h"
+#include "devices/input.h"
+#include "threads/malloc.h"
 
 static void syscall_handler (struct intr_frame *);
+
+void get_stack_arguments (struct intr_frame *f, int * args, int num_of_args);
 static void find_tid (struct thread *t, void * aux);
 
 /* Stores the id of the thread you're searching for when calling the find_tid(). */
@@ -95,6 +103,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* The first argument is the name of the file being created,
            and the second argument is the size of the file. */
 				get_stack_arguments(f, &args[0], 2);
+        check_buffer(args[0], args[1]);
 
         /* Ensures that converted address is valid. */
         phys_page_ptr = pagedir_get_page(thread_current()->pagedir, (const void *) args[0]);
@@ -153,8 +162,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* Get three arguments off of the stack. The first represents the fd, the second
            represents the buffer, and the third represents the buffer length. */
         get_stack_arguments(f, &args[0], 3);
-
-        // if (!is_user_vaddr(args[1])) exit(-1);
+        check_buffer(args[1], args[2]);
         /* Ensures that converted address is valid. */
         phys_page_ptr = pagedir_get_page(thread_current()->pagedir, (const void *) args[1]);
         if (phys_page_ptr == NULL)
@@ -164,13 +172,14 @@ syscall_handler (struct intr_frame *f UNUSED)
         args[1] = (int) phys_page_ptr;
 
         /* Return the result of the read() function in the eax register. */
-        f->eax = read(args[0], (const void *) args[1], (unsigned) args[2]);
+        f->eax = read(args[0], (void *) args[1], (unsigned) args[2]);
 				break;
 
 			case SYS_WRITE:
         /* Get three arguments off of the stack. The first represents the fd, the second
            represents the buffer, and the third represents the buffer length. */
         get_stack_arguments(f, &args[0], 3);
+        check_buffer(args[1], args[2]);
 
         /* Ensures that converted address is valid. */
         phys_page_ptr = pagedir_get_page(thread_current()->pagedir, (const void *) args[1]);
@@ -504,6 +513,17 @@ void check_valid_addr (const void *ptr_to_check)
 	}
 }
 
+void check_buffer (void *buff_to_check, unsigned size)
+{
+  int i;
+  char *ptr  = (char * )buff_to_check;
+  for (i = 0; i < size; i++)
+    {
+      check_valid_addr((const void *) ptr);
+      ptr++;
+    }
+}
+
 /* Code inspired by GitHub Repo created by ryantimwilson (full link in Design2.txt).
    Get up to three arguments from a programs stack (they directly follow the system
    call argument). */
@@ -521,7 +541,7 @@ void get_stack_arguments (struct intr_frame *f, int *args, int num_of_args)
 
 /* This function is passed to thread_foreach in order to find the thread
    that matches a specific tid. */
-static void find_tid (struct thread *t, void * aux)
+static void find_tid (struct thread *t, void * aux UNUSED)
 {
   if(current_tid == t->tid)
   {

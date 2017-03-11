@@ -202,12 +202,7 @@ thread_create (const char *name, int priority,
   /* Stack frame for switch_threads(). */
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
-  sf->ebp = 0;
-
-  // if (!filesys_open(t->name))
-  // {
-  //   return -1;
-  // }
+  sf->ebp = 0; 
 
   intr_set_level (old_level);
 

@@ -24,5 +24,6 @@ void seek (int fd, unsigned position);
 unsigned tell (int fd);
 void close (int fd);
 
+void check_valid_addr (const void *ptr_to_check);
 
 #endif /* userprog/syscall.h */

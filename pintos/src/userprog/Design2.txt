@@ -21,7 +21,7 @@ Katie Kristiansen
 >> preparing your submission, other than the Pintos documentation, course
 >> text, lecture notes, and course staff.
 
-https://github.com/ryantimwilson/Pintos-Project-2/blob/master/src/userprog/syscall.c - (for getting stack args).
+https://github.com/ryantimwilson/Pintos-Project-2/
 
 https://github.com/pindexis/pintos-project2
 
@@ -33,6 +33,20 @@ https://github.com/pindexis/pintos-project2
 >> A1: Copy here the declaration of each new or changed `struct' or
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
+
+/* thread.h */
+ADDED TO struct thread:
+  struct list child_process_list; - A list to hold a specific user program's children.
+  struct list file_descriptors; - A list to hold a specific thread's files and their file descriptors.
+  struct list_elem child_elem; - A list element for the children in the child_process_list.
+  struct semaphore being_waited_on; - A semaphore to .
+  int64_t sleep_duration; - How long the thread must sleep, expressed as ticks since the OS Booted Up.
+  struct list_elem timer_sleep_elem; - A list element for maintaining a list of sleeping threads in timer.c.
+
+/* timer.c */
+GLOBAL VARIABLE:
+  static struct list sleeping_threads; - An ordered list to keep track of threads that are asleep.
+  static struct lock sleeping_threads_list_lock; - Provides a locking mechanism for the sleeping_threads list.
 
 ---- ALGORITHMS ----
 

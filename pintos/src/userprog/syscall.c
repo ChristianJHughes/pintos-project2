@@ -16,13 +16,6 @@
 static void syscall_handler (struct intr_frame *);
 
 void get_stack_arguments (struct intr_frame *f, int * args, int num_of_args);
-// static vmakeoid find_tid (struct thread *t, void * aux);
-
-/* Stores the id of the thread you're searching for when calling the find_tid(). */
-// static tid_t current_tid;
-
-/* The thread with a tid matching current_tid, determined in find_tid(). */
-// static struct thread *matching_thread;
 
 /* Creates a struct to insert files and their respective file descriptor into
    the file_descriptors list for the current thread. */
@@ -269,11 +262,6 @@ int write (int fd, const void *buffer, unsigned length)
       struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
       if (t->file_descriptor == fd)
       {
-        // if (t->file_addr.deny_write)
-        // {
-        //   lock_release(&lock_filesys);
-        //   return 0;
-        // }
         int bytes_written = (int) file_write(t->file_addr, buffer, length);
         lock_release(&lock_filesys);
         return bytes_written;
@@ -514,8 +502,7 @@ void check_valid_addr (const void *ptr_to_check)
   /* Terminate the program with an exit status of -1 if we are passed
      an argument that is not in the user address space or is null. Also make
      sure that pointer doesn't go beyond the bounds of virtual address space.  */
-     // TODO Might need this || ptr_to_check < 0x08084000
-  if(!is_user_vaddr(ptr_to_check) || ptr_to_check == NULL || ptr_to_check < (void *) 0x08048000) // TODO IDK
+  if(!is_user_vaddr(ptr_to_check) || ptr_to_check == NULL || ptr_to_check < (void *) 0x08048000)
 	{
     /* Terminate the program and free its resources */
     exit(-1);
@@ -547,13 +534,3 @@ void get_stack_arguments (struct intr_frame *f, int *args, int num_of_args)
       args[i] = *ptr;
     }
 }
-
-/* This function is passed to thread_foreach in order to find the thread
-   that matches a specific tid. */
-// static void find_tid (struct thread *t, void * aux UNUSED)
-// {
-//   if(current_tid == t->tid)
-//   {
-//     matching_thread = t;
-//   }
-// }

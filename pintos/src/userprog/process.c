@@ -145,14 +145,16 @@ process_wait (tid_t child_tid UNUSED)
   }
 
   /* If we've already waited on this child, then we shall not wait again. */
-  if(child_thread->is_waited_for)
-  {
-    return -1;
-  }
-  else
-  {
-    child_thread->is_waited_for = true;
-  }
+  // if(child_thread->is_waited_for)
+  // {
+  //   return -1;
+  // }
+  // else
+  // {
+  //   child_thread->is_waited_for = true;
+  // }
+  
+  list_remove(&child_thread->child_elem);
 
   /* Put the current thread to sleep by waiting on the child thread whose
      PID was passed in. */

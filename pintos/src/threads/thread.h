@@ -99,7 +99,6 @@ struct thread
     uint32_t *pagedir;                 /* Page directory. */
     struct list child_process_list;    /* List containing each child process. */
     int exit_status;                   /* Stores the status upon exit */
-    bool is_waited_for;                /* Used to keep track if the processes parent is waiting. */
     struct list_elem child_elem;       /* Used to keep track of the element in the child list. */
     struct semaphore being_waited_on;  /* Used to put a parent thread to sleep when it needs to wait for a child. */
     struct list file_descriptors;      /* List of file descriptors. */

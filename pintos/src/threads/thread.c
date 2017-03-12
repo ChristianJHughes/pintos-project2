@@ -487,7 +487,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->exit_status = -1;
 
   /* Init the thread to show it has not been waited on. */
-  t->is_waited_for = false;
+  // t->is_waited_for = false;
 
   list_push_back (&all_list, &t->allelem);
 }

@@ -202,7 +202,7 @@ thread_create (const char *name, int priority,
   /* Stack frame for switch_threads(). */
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
-  sf->ebp = 0; 
+  sf->ebp = 0;
 
   intr_set_level (old_level);
 
@@ -474,20 +474,20 @@ init_thread (struct thread *t, const char *name, int priority)
 
   /* Init the threads list of processes it creates. */
   list_init(&t->child_process_list);
+
+  /* Init the list of file descriptors for this thread, which holds all of the files that this thread has open. */
   list_init(&t->file_descriptors);
+
   /* Initalize the next available file descriptor to 2 (0 and 1 are reserved
      for STDIN and STDOUT, respectively). */
   t->cur_fd = 2;
 
-  /* Init the semaphore in charge of putting a parent thread to sleep,. */
+  /* Init the semaphore in charge of putting a parent thread to sleep. */
   sema_init(&t->being_waited_on, 0);
 
   /* We assume the exit status is bad, unless exit() is properly
      called (and it is assigned otherwise). */
   t->exit_status = -1;
-
-  /* Init the thread to show it has not been waited on. */
-  // t->is_waited_for = false;
 
   list_push_back (&all_list, &t->allelem);
 }

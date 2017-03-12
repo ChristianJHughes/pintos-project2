@@ -101,8 +101,8 @@ struct thread
     int exit_status;                   /* Stores the status upon exit */
     struct list_elem child_elem;       /* Used to keep track of the element in the child list. */
     struct semaphore being_waited_on;  /* Used to put a parent thread to sleep when it needs to wait for a child. */
-    struct list file_descriptors;      /* List of file descriptors. */
-    int cur_fd;                        /* The next available file descriptor. */
+    struct list file_descriptors;      /* List of file descriptors belonging to this therad. */
+    int cur_fd;                        /* An integer available file descriptor. */
 #endif
 
     /* Owned by thread.c. */

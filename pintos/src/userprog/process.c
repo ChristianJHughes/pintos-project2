@@ -21,8 +21,8 @@
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
+/* A function to be passed to the thread_foreach() function to find a thread based on tid. */
 static void find_tid (struct thread *t, void * aux);
-
 /* A global variable - the thread that we are looking for in the thread list (NULL if not found). */
 static struct thread * matching_thread;
 /* A global variable - the tid of the thread that we are looking for in the thread list (-1 if not found (set in functions)). */
@@ -58,6 +58,7 @@ process_execute (const char *file_name)
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy);
 
+  /* If we're unable to create the thread, then free its pages and exit. */
   if (tid == TID_ERROR)
   {
     palloc_free_page (fn_copy);
@@ -122,6 +123,7 @@ process_wait (tid_t child_tid UNUSED)
   /* list element to iterate the list of child threads. */
   struct list_elem *temp;
 
+  /* If the list is empty, we have no children and do not need to wait. */
   if(list_empty(&thread_current()->child_process_list))
   {
     return -1;
@@ -144,16 +146,8 @@ process_wait (tid_t child_tid UNUSED)
     return -1;
   }
 
-  /* If we've already waited on this child, then we shall not wait again. */
-  // if(child_thread->is_waited_for)
-  // {
-  //   return -1;
-  // }
-  // else
-  // {
-  //   child_thread->is_waited_for = true;
-  // }
-  
+  /* Remove the child from our lists of child threads, so that calling this
+     function for a second time does not require additional waiting. */
   list_remove(&child_thread->child_elem);
 
   /* Put the current thread to sleep by waiting on the child thread whose
@@ -407,16 +401,13 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
 
- if (success)
- {
-   file_deny_write(file);
- }
- else
- {
-   /* We arrive here whether the load is successful or not. */
-   file_close (file);
- }
- return success;
+   /* Of the load was successful, then we must ensure that it is not writen to.
+      Writing to open executables has unpredictable results. Otherwise, close the file.  */
+   if (success)
+     file_deny_write(file);
+   else
+     file_close (file);
+   return success; /* In either case, return whether or not the executable was loaded correctly.  */
 }
 
 /* load() helpers. */

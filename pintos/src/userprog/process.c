@@ -404,9 +404,17 @@ load (const char *file_name, void (**eip) (void), void **esp)
   success = true;
 
  done:
-  /* We arrive here whether the load is successful or not. */
-  file_close (file);
-  return success;
+
+ if (success)
+ {
+   file_deny_write(file);
+ }
+ else
+ {
+   /* We arrive here whether the load is successful or not. */
+   file_close (file);
+ }
+ return success;
 }
 
 /* load() helpers. */

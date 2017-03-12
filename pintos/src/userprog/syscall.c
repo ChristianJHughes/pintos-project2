@@ -269,8 +269,14 @@ int write (int fd, const void *buffer, unsigned length)
       struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
       if (t->file_descriptor == fd)
       {
+        // if (t->file_addr.deny_write)
+        // {
+        //   lock_release(&lock_filesys);
+        //   return 0;
+        // }
+        int bytes_written = (int) file_write(t->file_addr, buffer, length);
         lock_release(&lock_filesys);
-        return (int) file_write(t->file_addr, buffer, length);
+        return bytes_written;
       }
   }
 
@@ -287,9 +293,10 @@ pid_t exec (const char * file)
 	{
 		return -1;
 	}
-
+  lock_acquire(&lock_filesys);
   /* Get and return the PID of the process that is created. */
 	pid_t child_tid = process_execute(file);
+  lock_release(&lock_filesys);
 	return child_tid;
 }
 
@@ -400,9 +407,7 @@ int read (int fd, void *buffer, unsigned length)
       if (t->file_descriptor == fd)
       {
         lock_release(&lock_filesys);
-        file_deny_write(t->file_addr);
         int bytes = (int) file_read(t->file_addr, buffer, length);
-        file_allow_write(t->file_addr);
         return bytes;
       }
   }
@@ -510,7 +515,7 @@ void check_valid_addr (const void *ptr_to_check)
      an argument that is not in the user address space or is null. Also make
      sure that pointer doesn't go beyond the bounds of virtual address space.  */
      // TODO Might need this || ptr_to_check < 0x08084000
-  if(!is_user_vaddr(ptr_to_check) || ptr_to_check == NULL) // TODO IDK
+  if(!is_user_vaddr(ptr_to_check) || ptr_to_check == NULL || ptr_to_check < 0x08048000) // TODO IDK
 	{
     /* Terminate the program and free its resources */
     exit(-1);

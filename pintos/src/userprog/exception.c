@@ -27,7 +27,7 @@ static void page_fault (struct intr_frame *);
    Refer to [IA32-v3a] section 5.15 "Exception and Interrupt
    Reference" for a description of each of these exceptions. */
 void
-exception_init (void) 
+exception_init (void)
 {
   /* These exceptions can be raised explicitly by a user program,
      e.g. via the INT, INT3, INTO, and BOUND instructions.  Thus,
@@ -62,14 +62,14 @@ exception_init (void)
 
 /* Prints exception statistics. */
 void
-exception_print_stats (void) 
+exception_print_stats (void)
 {
   printf ("Exception: %lld page faults\n", page_fault_cnt);
 }
 
 /* Handler for an exception (probably) caused by a user process. */
 static void
-kill (struct intr_frame *f) 
+kill (struct intr_frame *f)
 {
   /* This interrupt is one (probably) caused by a user process.
      For example, the process might have tried to access unmapped
@@ -78,7 +78,7 @@ kill (struct intr_frame *f)
      the kernel.  Real Unix-like operating systems pass most
      exceptions back to the process via signals, but we don't
      implement them. */
-     
+
   /* The interrupt frame's code segment value tells us where the
      exception originated. */
   switch (f->cs)
@@ -89,7 +89,10 @@ kill (struct intr_frame *f)
       printf ("%s: dying due to interrupt %#04x (%s).\n",
               thread_name (), f->vec_no, intr_name (f->vec_no));
       intr_dump_frame (f);
-      thread_exit (); 
+
+      /* The kernel must kill the program in question, calling exit destroys the thread
+         and prints its exit staus. */
+      exit(-1);
 
     case SEL_KCSEG:
       /* Kernel's code segment, which indicates a kernel bug.
@@ -97,14 +100,17 @@ kill (struct intr_frame *f)
          may cause kernel exceptions--but they shouldn't arrive
          here.)  Panic the kernel to make the point.  */
       intr_dump_frame (f);
-      PANIC ("Kernel bug - unexpected interrupt in kernel"); 
+
+      /* The kernel must kill the program in question, calling exit destroys the thread
+         and prints its exit staus. */
+      PANIC ("Kernel bug - unexpected interrupt in kernel");
 
     default:
       /* Some other code segment?  Shouldn't happen.  Panic the
          kernel. */
       printf ("Interrupt %#04x (%s) in unknown segment %04x\n",
              f->vec_no, intr_name (f->vec_no), f->cs);
-      thread_exit ();
+      exit(-1);
     }
 }
 
@@ -120,7 +126,7 @@ kill (struct intr_frame *f)
    description of "Interrupt 14--Page Fault Exception (#PF)" in
    [IA32-v3a] section 5.15 "Exception and Interrupt Reference". */
 static void
-page_fault (struct intr_frame *f) 
+page_fault (struct intr_frame *f)
 {
   bool not_present;  /* True: not-present page, false: writing r/o page. */
   bool write;        /* True: access was write, false: access was read. */
@@ -158,4 +164,3 @@ page_fault (struct intr_frame *f)
           user ? "user" : "kernel");
   kill (f);
 }
-

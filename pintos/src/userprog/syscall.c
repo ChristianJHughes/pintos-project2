@@ -16,13 +16,13 @@
 static void syscall_handler (struct intr_frame *);
 
 void get_stack_arguments (struct intr_frame *f, int * args, int num_of_args);
-static void find_tid (struct thread *t, void * aux);
+// static vmakeoid find_tid (struct thread *t, void * aux);
 
 /* Stores the id of the thread you're searching for when calling the find_tid(). */
-static tid_t current_tid;
+// static tid_t current_tid;
 
 /* The thread with a tid matching current_tid, determined in find_tid(). */
-static struct thread *matching_thread;
+// static struct thread *matching_thread;
 
 /* Creates a struct to insert files and their respective file descriptor into
    the file_descriptors list for the current thread. */
@@ -244,9 +244,10 @@ void exit (int status)
  which may be less than LENGTH if some bytes could not be written. */
 int write (int fd, const void *buffer, unsigned length)
 {
-  lock_acquire(&lock_filesys);
   /* list element to iterate the list of child threads. */
   struct list_elem *temp;
+
+  lock_acquire(&lock_filesys);
 
   /* If fd is equal to one, then we write to STDOUT (the console, usually). */
 	if(fd == 1)
@@ -399,7 +400,10 @@ int read (int fd, void *buffer, unsigned length)
       if (t->file_descriptor == fd)
       {
         lock_release(&lock_filesys);
-        return (int) file_read(t->file_addr, buffer, length);
+        file_deny_write(t->file_addr);
+        int bytes = (int) file_read(t->file_addr, buffer, length);
+        file_allow_write(t->file_addr);
+        return bytes;
       }
   }
 
@@ -515,7 +519,7 @@ void check_valid_addr (const void *ptr_to_check)
 
 void check_buffer (void *buff_to_check, unsigned size)
 {
-  int i;
+  unsigned i;
   char *ptr  = (char * )buff_to_check;
   for (i = 0; i < size; i++)
     {
@@ -541,10 +545,10 @@ void get_stack_arguments (struct intr_frame *f, int *args, int num_of_args)
 
 /* This function is passed to thread_foreach in order to find the thread
    that matches a specific tid. */
-static void find_tid (struct thread *t, void * aux UNUSED)
-{
-  if(current_tid == t->tid)
-  {
-    matching_thread = t;
-  }
-}
+// static void find_tid (struct thread *t, void * aux UNUSED)
+// {
+//   if(current_tid == t->tid)
+//   {
+//     matching_thread = t;
+//   }
+// }

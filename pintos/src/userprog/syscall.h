@@ -25,5 +25,6 @@ unsigned tell (int fd);
 void close (int fd);
 
 void check_valid_addr (const void *ptr_to_check);
+void check_buffer (void *buff_to_check, unsigned size);
 
 #endif /* userprog/syscall.h */

@@ -103,7 +103,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* The first argument is the name of the file being created,
            and the second argument is the size of the file. */
 				get_stack_arguments(f, &args[0], 2);
-        check_buffer(args[0], args[1]);
+        check_buffer((void *)args[0], args[1]);
 
         /* Ensures that converted address is valid. */
         phys_page_ptr = pagedir_get_page(thread_current()->pagedir, (const void *) args[0]);
@@ -162,7 +162,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* Get three arguments off of the stack. The first represents the fd, the second
            represents the buffer, and the third represents the buffer length. */
         get_stack_arguments(f, &args[0], 3);
-        check_buffer(args[1], args[2]);
+        check_buffer((void *)args[1], args[2]);
         /* Ensures that converted address is valid. */
         phys_page_ptr = pagedir_get_page(thread_current()->pagedir, (const void *) args[1]);
         if (phys_page_ptr == NULL)
@@ -179,7 +179,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* Get three arguments off of the stack. The first represents the fd, the second
            represents the buffer, and the third represents the buffer length. */
         get_stack_arguments(f, &args[0], 3);
-        check_buffer(args[1], args[2]);
+        check_buffer((void *)args[1], args[2]);
 
         /* Ensures that converted address is valid. */
         phys_page_ptr = pagedir_get_page(thread_current()->pagedir, (const void *) args[1]);
@@ -289,7 +289,7 @@ int write (int fd, const void *buffer, unsigned length)
 pid_t exec (const char * file)
 {
   /* If a null file is passed in, return a -1. */
-	if(*file == NULL)
+	if(!file)
 	{
 		return -1;
 	}
@@ -515,7 +515,7 @@ void check_valid_addr (const void *ptr_to_check)
      an argument that is not in the user address space or is null. Also make
      sure that pointer doesn't go beyond the bounds of virtual address space.  */
      // TODO Might need this || ptr_to_check < 0x08084000
-  if(!is_user_vaddr(ptr_to_check) || ptr_to_check == NULL || ptr_to_check < 0x08048000) // TODO IDK
+  if(!is_user_vaddr(ptr_to_check) || ptr_to_check == NULL || ptr_to_check < (void *) 0x08048000) // TODO IDK
 	{
     /* Terminate the program and free its resources */
     exit(-1);
